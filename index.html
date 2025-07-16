@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>운동량 시뮬레이션</title>
+  <title>운동량 시뮬레이션 - 방석 vs 맨땅</title>
   <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <style>
@@ -28,20 +28,27 @@
     let h = 5.0;
     let v = Math.sqrt(2 * g * h);
     let fallTime = v / g;
-    let p = m * v;
+    let p_total = m * v;
     let dt_soft = 0.1;
     let dt_hard = 0.01;
     let simTime = 0;
     let playing = true;
+    let timeHistory = [];
+    let pSoftHistory = [], pHardHistory = [];
+    let ISoftHistory = [], IHardHistory = [];
+    let FSoftHistory = [], FHardHistory = [];
+    let vSoftHistory = [], vHardHistory = [];
 
     function setup() {
       let canvas = createCanvas(400, 350);
       canvas.parent("simCanvas");
-      setInterval(updateGraph, 50);
+      frameRate(60);
 
       document.getElementById("timeSlider").addEventListener("input", (e) => {
         simTime = parseFloat(e.target.value);
         playing = false;
+        resetGraphs();
+        updateGraph();
       });
     }
 
@@ -57,7 +64,7 @@
       }
       document.getElementById("timeLabel").textContent = simTime.toFixed(2);
 
-      // 두 개의 물체 위치 계산
+      // 두 물체 위치 계산
       let y1 = simTime < fallTime ? eggStartY + (groundY - eggStartY) * (simTime / fallTime) : groundY;
       let y2 = simTime < fallTime ? eggStartY + (groundY - eggStartY) * (simTime / fallTime) : groundY;
 
@@ -73,36 +80,101 @@
       fill(0, 100, 200);
       ellipse((3 * width) / 4, y2, eggSize, eggSize);
       fill(150, 150, 250);
-      rect((3 * width) / 4 - 30, groundY + 10, 60, 15, 10); // 방석 모양
+      rect((3 * width) / 4 - 30, groundY + 10, 60, 15, 10);
       textAlign(CENTER);
       text("방석", (3 * width) / 4, groundY + 40);
+
+      updateGraph();
+    }
+
+    function resetGraphs() {
+      timeHistory = [];
+      pSoftHistory = [];
+      pHardHistory = [];
+      ISoftHistory = [];
+      IHardHistory = [];
+      FSoftHistory = [];
+      FHardHistory = [];
+      vSoftHistory = [];
+      vHardHistory = [];
     }
 
     function updateGraph() {
       let t = simTime;
       let v_t = t < fallTime ? g * t : 0;
       let p_t = m * v_t;
-      let I_t = t >= fallTime ? p : 0;
-      let F_soft = p / dt_soft;
-      let F_hard = p / dt_hard;
+      let I_t = t >= fallTime ? p_total : 0;
+      let F_soft = p_total / dt_soft;
+      let F_hard = p_total / dt_hard;
       let F_soft_t = (t >= fallTime && t <= fallTime + dt_soft) ? F_soft : 0;
       let F_hard_t = (t >= fallTime && t <= fallTime + dt_hard) ? F_hard : 0;
 
+      timeHistory.push(t);
+      pSoftHistory.push(p_t);
+      pHardHistory.push(p_t);
+      ISoftHistory.push(I_t);
+      IHardHistory.push(I_t);
+      FSoftHistory.push(F_soft_t);
+      FHardHistory.push(F_hard_t);
+      vSoftHistory.push(v_t);
+      vHardHistory.push(v_t);
+
       Plotly.react("graph", [
         {
-          x: [t], y: [p_t], name: '운동량 p', mode: 'markers+lines', line: { color: 'blue' }
+          x: timeHistory,
+          y: pHardHistory,
+          name: '운동량 p (맨땅)',
+          mode: 'lines',
+          line: { color: 'red' }
         },
         {
-          x: [t], y: [I_t], name: '충격량 I', mode: 'markers+lines', line: { color: 'orange' }
+          x: timeHistory,
+          y: pSoftHistory,
+          name: '운동량 p (방석)',
+          mode: 'lines',
+          line: { color: 'blue' }
         },
         {
-          x: [t], y: [F_soft_t], name: '충격력 F - 방석', mode: 'markers+lines', line: { color: 'green' }
+          x: timeHistory,
+          y: IHardHistory,
+          name: '충격량 I (맨땅)',
+          mode: 'lines',
+          line: { color: 'orange' }
         },
         {
-          x: [t], y: [F_hard_t], name: '충격력 F - 맨땅', mode: 'markers+lines', line: { color: 'red' }
+          x: timeHistory,
+          y: ISoftHistory,
+          name: '충격량 I (방석)',
+          mode: 'lines',
+          line: { color: 'purple' }
         },
         {
-          x: [t], y: [v_t], name: '속력 v', mode: 'markers+lines', line: { color: 'purple' }
+          x: timeHistory,
+          y: FHardHistory,
+          name: '충격력 F (맨땅)',
+          mode: 'lines',
+          line: { color: 'black' }
+        },
+        {
+          x: timeHistory,
+          y: FSoftHistory,
+          name: '충격력 F (방석)',
+          mode: 'lines',
+          line: { color: 'green' }
+        },
+        {
+          x: timeHistory,
+          y: vHardHistory,
+          name: '속력 v (맨땅)',
+          mode: 'lines',
+          line: { color: 'darkred' }
+        },
+        {
+          x: timeHistory,
+          y: vSoftHistory,
+          name: '속력 v (방석)',
+          mode: 'lines',
+          line: { color: 'darkblue' }
         }
       ], {
         margin: { t: 10 },
