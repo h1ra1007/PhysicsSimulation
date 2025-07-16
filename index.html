@@ -65,8 +65,12 @@
       document.getElementById("timeLabel").textContent = simTime.toFixed(2);
 
       // 두 물체 위치 계산
-      let y1 = simTime < fallTime ? eggStartY + (groundY - eggStartY) * (simTime / fallTime) : groundY;
-      let y2 = simTime < fallTime ? eggStartY + (groundY - eggStartY) * (simTime / fallTime) : groundY;
+      let y1 = simTime < fallTime
+  ? eggStartY + 0.5 * g * Math.pow(simTime, 2) * ((groundY - eggStartY) / h)
+  : groundY;
+      let y2 = simTime < fallTime
+  ? eggStartY + 0.5 * g * Math.pow(simTime, 2) * ((groundY - eggStartY) / h)
+  : groundY;
 
       // 맨땅 달걀
       fill(200, 0, 0);
